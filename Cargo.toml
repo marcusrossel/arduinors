@@ -1,0 +1,9 @@
+[package]
+name = "arduino"
+version = "0.1.0"
+authors = ["Marcus Rossel <marcusrossel@icloud.com>"]
+edition = "2018"
+
+[dependencies]
+firmata = "0.2.0"
+regex = "1"
