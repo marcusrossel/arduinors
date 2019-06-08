@@ -5,7 +5,9 @@ pub use crate::pin;
 pub use crate::pin::Pin;
 
 // A handle on an Arduino, to communicate with it via the Firmata protocol.
-pub struct Arduino { board: firmata::Board }
+pub struct Arduino {
+    board: firmata::Board
+}
 
 impl Arduino {
 
@@ -15,12 +17,9 @@ impl Arduino {
     // This function expects the Arduino CLI to be installed and accessible via the "arduino-cli"
     // command.
     pub fn new() -> Result<Arduino, Error> {
-        let port = match cli::query(cli::Query::Port) {
-            Ok(port) => port,
-            Err(err) => return Err(err)
-        };
-
+        let port = cli::query(cli::Query::Port)?;
         let arduino = Arduino { board: firmata::Board::new(&port[..]) };
+
         Ok(arduino)
     }
 

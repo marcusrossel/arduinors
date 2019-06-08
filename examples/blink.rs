@@ -6,20 +6,13 @@ use std::time::Duration;
 use arduino::Arduino;
 
 fn main() {
-    let mut arduino = match Arduino::new() {
-        Ok(arduino) => arduino,
-        Err(err) => {
-            println!("Error: {:?}", err);
-            return;
-        }
-    };
+    let mut arduino = Arduino::new().unwrap();
+    let pin_10 = arduino::Pin::new(10);
 
-    let p10 = arduino::Pin::P10;
-
-    arduino.set_pin_mode(&p10, &arduino::pin::Mode::Output);
-    arduino.digital_write(&p10, &arduino::pin::State::High);
+    arduino.set_pin_mode(&pin_10, &arduino::pin::Mode::Output);
+    arduino.digital_write(&pin_10, &arduino::pin::State::High);
 
     sleep(Duration::from_secs(1));
 
-    arduino.digital_write(&p10, &arduino::pin::State::Low);
+    arduino.digital_write(&pin_10, &arduino::pin::State::Low);
 }

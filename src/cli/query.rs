@@ -1,17 +1,11 @@
-// An interface for accessing the Arduino CLI.
-// This module's functions expect that the Arduino CLI is installed and accessible using the
-// "arduino-cli" command - otherwise an error will occur.
-
 use std::str;
 use std::process::Command;
 use regex::Regex;
 
+use super::Error;
+
 // A list of items that the Arduino CLI can be queried for.
 pub enum Query { Fqbn, Port }
-
-// The errors that can occur as a result of querying the Arduino CLI.
-#[derive(Debug)]
-pub enum Error { CommandFailure, UnexpectedSyntax, NoDevice, MultipleDevices }
 
 // Extracts the item associated with a given query by calling the Arduino CLI. If this process
 // fails an error is returned.

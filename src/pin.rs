@@ -1,13 +1,20 @@
 // A digital pin on an Arduino.
-pub enum Pin { P2, P3, P4, P5, P6, P7, P8, P9, P10, P11, P12 }
+pub struct Pin {
+    value: i32
+}
 
 impl Pin {
-    pub fn value(&self) -> i32 {
-        match self {
-            Pin::P2 => 2, Pin::P3 => 3, Pin::P4 => 4, Pin::P5 => 5, Pin::P6 => 6, Pin::P7 => 7,
-            Pin::P8 => 8, Pin::P9 => 9, Pin::P10 => 10, Pin::P11 => 11, Pin::P12 => 12
+    // Creates a pin from its number value.
+    // Valid values are 2-12.
+    pub fn new(value: i32) -> Pin {
+        if value < 2 || value > 12 {
+            panic!("Pin initializer received invalid value: {}", value);
         }
+
+        Pin { value }
     }
+
+    pub fn value(&self) -> i32 { self.value }
 }
 
 // The mode of a digital pin on an Arduino.
@@ -30,3 +37,32 @@ impl State {
 
 // A PWM level of a digital pin on an Arduino.
 pub type Level = u8;
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn valid_pin() {
+        let pin_10 = Pin::new(10);
+        assert_eq!(pin_10.value(), 10);
+    }
+
+    #[test]
+    #[should_panic]
+    fn invalid_pin() {
+        let _pin_1 = Pin::new(1);
+    }
+
+    #[test]
+    fn mode_value() {
+        assert_eq!(Mode::Input.value(), 0);
+        assert_eq!(Mode::Output.value(), 1);
+    }
+
+    #[test]
+    fn state_value() {
+        assert_eq!(State::Low.value(), 0);
+        assert_eq!(State::High.value(), 1);
+    }
+}
