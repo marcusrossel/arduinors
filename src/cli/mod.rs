@@ -1,8 +1,6 @@
-// An interface for accessing the Arduino CLI.
-// This module's functions expect that the Arduino CLI is installed and accessible using the
-// "arduino-cli" command - otherwise an error will occur.
+//! This module provides an interface for accessing the Arduino CLI.
 
-// The errors that can occur as a result of querying the Arduino CLI.
+/// The errors that can occur as a result of interacting with the Arduino CLI.
 #[derive(Debug)]
 pub enum Error { CommandFailure, UnexpectedSyntax, NoDevice, MultipleDevices, InvalidSketchPath }
 

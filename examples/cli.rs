@@ -1,6 +1,6 @@
 // This is an example program demonstrating interactions with the Arduino CLI.
 
-use arduino::cli;
+use arduinors::cli;
 
 fn main() {
     let fqbn = cli::query(cli::Query::Fqbn).unwrap();

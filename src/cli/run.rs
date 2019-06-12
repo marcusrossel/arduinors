@@ -6,10 +6,13 @@ use std::io;
 use super::Error;
 use super::query::*;
 
-// Compiles a sketch at a given path for the currently connected Arduino - or returns an error
-// if this operation fails.
-// The sketch must have the format required for Arduino sketches.
-// The given path should point to the sketch directory, not file.
+/// Compiles a sketch at a given path, for the currently connected Arduino.
+/// The given path should point to the sketch **directory**, not **file**.
+///
+/// # Errors
+/// This function calls `arduino::cli::query`, and will pass along any errors produced by it.
+/// * `CommandFailure`, if the `arduino-cli` command fails or an error occurs during compilation.
+/// * `InvalidSketchPath`, if the sketch does not have the format required for Arduino sketches.
 pub fn compile(sketch: &Path) -> Result<(), Error> {
     // Compilation requires the sketch path and FQBN as parameters.
     let path = sketch_to_str(sketch)?;
@@ -23,8 +26,13 @@ pub fn compile(sketch: &Path) -> Result<(), Error> {
     status_to_result(&compilation_result)
 }
 
-// Uploads a compiled sketch onto the currently connected Arduino.
-// The given path should point to the sketch directory, not file.
+/// Uploads a compiled sketch onto the currently connected Arduino.
+/// The given path should point to the sketch **directory**, not **file**.
+///
+/// # Errors
+/// This function calls `arduino::cli::query`, and will pass along any errors produced by it.
+/// * `CommandFailure`, if the `arduino-cli` command fails or an error occurs during uploading.
+/// * `InvalidSketchPath`, if the sketch does not have the format required for Arduino sketches.
 pub fn upload(sketch: &Path) -> Result<(), Error> {
     // Uploading requires the sketch path, Arduino's FQBN and port as parameters.
     let path = sketch_to_str(sketch)?;

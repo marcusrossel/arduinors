@@ -1,8 +1,10 @@
 [package]
-name = "arduino"
+name = "arduinors"
 version = "0.1.0"
 authors = ["Marcus Rossel <marcusrossel@icloud.com>"]
 edition = "2018"
+description = "Firmata-based interface to an Arduino and the Arduino CLI."
+license = "MIT OR Apache-2.0"
 
 [dependencies]
 firmata = "0.2.0"

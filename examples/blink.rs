@@ -3,6 +3,7 @@
 use std::thread::sleep;
 use std::time::Duration;
 
+use arduinors as arduino;
 use arduino::Arduino;
 
 fn main() {

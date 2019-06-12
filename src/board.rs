@@ -4,18 +4,17 @@ pub use cli::Error;
 pub use crate::pin;
 pub use crate::pin::Pin;
 
-// A handle on an Arduino, to communicate with it via the Firmata protocol.
+/// A handle on an Arduino, to communicate with it via the Firmata protocol.
 pub struct Arduino {
     board: firmata::Board
 }
 
 impl Arduino {
 
-    // Creates an Arduino object from the single currently connected Arduino device, or Returns
-    // an error if this is not possible.
-    //
-    // This function expects the Arduino CLI to be installed and accessible via the "arduino-cli"
-    // command.
+    /// Creates an Arduino object from the single currently connected Arduino device.
+    ///
+    /// # Errors
+    /// This function calls `arduino::cli::query`, and will pass along any errors produced by it.
     pub fn new() -> Result<Arduino, Error> {
         let port = cli::query(cli::Query::Port)?;
         let arduino = Arduino { board: firmata::Board::new(&port[..]) };

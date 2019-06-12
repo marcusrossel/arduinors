@@ -4,11 +4,18 @@ use regex::Regex;
 
 use super::Error;
 
-// A list of items that the Arduino CLI can be queried for.
+/// Items that the Arduino CLI can be queried for.
 pub enum Query { Fqbn, Port }
 
-// Extracts the item associated with a given query by calling the Arduino CLI. If this process
-// fails an error is returned.
+/// Extracts the item associated with a given query by calling the Arduino CLI - or more
+/// specifically `arduino-cli board list`.
+///
+/// # Errors
+/// * `CommandFailure`, if the `arduino-cli` command fails or produces non-UTF-8 output.
+/// * `NoDevice`, if no Arduino is connected to the computer during the call.
+/// * `MultipleDevices`, if more than one Arduino is connected to the computer during the call.
+/// * `UnexpectedSyntax`, if the call to the Arduino CLI produced an output in a different format
+///   than expected.
 pub fn query(query: Query) -> Result<String, Error> {
     // Asks the Arduino CLI for connected Arduinos.
     let output = Command::new("arduino-cli")
