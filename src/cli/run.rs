@@ -1,7 +1,5 @@
-use std::process::ExitStatus;
-use std::process::Command;
+use std::process;
 use std::path::Path;
-use std::io;
 
 use super::Error;
 use super::query::*;
@@ -19,14 +17,19 @@ pub fn compile(sketch: &Path) -> Result<(), Error> {
     let fqbn = query(Query::Fqbn)?;
 
     // Asks the Arduino CLI to compile the given sketch.
-    let compilation_result = Command::new("arduino-cli")
+    let compilation_result = process::Command::new("arduino-cli")
         .args(&["compile", "--fqbn", &fqbn[..], path])
+        .stdout(process::Stdio::null())
+        .stderr(process::Stdio::null())
         .status();
 
-    status_to_result(&compilation_result)
+    match compilation_result {
+        Ok(status) if status.success() => Ok(()),
+        _ => Err(Error::CommandFailure),
+    }
 }
 
-/// Uploads a compiled sketch onto the currently connected Arduino.
+/// Uploads a **compiled** sketch onto the currently connected Arduino.
 /// The given path should point to the sketch **directory**, not **file**.
 ///
 /// # Errors
@@ -40,31 +43,39 @@ pub fn upload(sketch: &Path) -> Result<(), Error> {
     let port = query(Query::Port)?;
 
     // Asks the Arduino CLI to upload the given compiled sketch.
-    let compilation_result = Command::new("arduino-cli")
+    let compilation_result = process::Command::new("arduino-cli")
         .args(&["upload", "--port", &port[..], "--fqbn", &fqbn[..], path])
+        .stdout(process::Stdio::null())
+        .stderr(process::Stdio::null())
         .status();
 
-    status_to_result(&compilation_result)
+    match compilation_result {
+        Ok(status) if status.success() => Ok(()),
+        _ => Err(Error::CommandFailure),
+    }
 }
 
-// Converts a given sketch-path to its string representation, validating the validity of the
-// path in the process.
+/// Converts a given sketch-path to its string representation, while validating the path in the
+/// process.
 fn sketch_to_str(sketch: &Path) -> Result<&str, Error> {
     // An Arduino sketch must be a directory with a valid UTF-8 name.
-    if !sketch.is_dir() { return Err(Error::InvalidSketchPath); }
     match sketch.to_str() {
-        Some(path) => Ok(path),
-        None => return Err(Error::InvalidSketchPath)
+        Some(path) if sketch.is_dir() => Ok(path),
+        _ => Err(Error::InvalidSketchPath),
     }
 }
 
-// Returns on failure if the given status indicates that command execution itself failed or the
-// command returned on failure.
-fn status_to_result(status: &Result<ExitStatus, io::Error>) -> Result<(), Error> {
-    match status {
-        Ok(status) => if !status.success() { return Err(Error::CommandFailure) },
-        Err(_) => return Err(Error::CommandFailure)
-    }
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-    Ok(())
+    #[test]
+    fn invalid_sketch_path() {
+        let invalid_path = Path::new(":X/\\:y/z");
+
+        let result = sketch_to_str(invalid_path);
+        let err = result.unwrap_err();
+
+        assert_eq!(err, Error::InvalidSketchPath);
+    }
 }

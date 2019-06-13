@@ -5,6 +5,7 @@ use regex::Regex;
 use super::Error;
 
 /// Items that the Arduino CLI can be queried for.
+#[derive(Clone, Copy)]
 pub enum Query { Fqbn, Port }
 
 /// Extracts the item associated with a given query by calling the Arduino CLI - or more
@@ -38,8 +39,12 @@ pub fn query(query: Query) -> Result<String, Error> {
     }
 }
 
-// Extracts a given query item from a given output of "arduino-cli board list". If that is not
-// possible an error is returned.
+/// Extracts a given query item from a given output of `arduino-cli board list`.
+///
+/// # Errors
+/// This function calls `query_from_board_entry`, and will pass along any errors produced by it.
+/// * `NoDevice`, if no Arduino is connected to the computer during the call.
+/// * `MultipleDevices`, if more than one Arduino is connected to the computer during the call.
 fn query_from_board_list(query: Query, board_list: &str) -> Result<String, Error> {
     let emtpy_line = Regex::new(r"^\s*$").unwrap();
 
@@ -67,33 +72,100 @@ fn query_from_board_list(query: Query, board_list: &str) -> Result<String, Error
     }
 }
 
-// Extracts a given query item from a given board entry of the output of "arduino-cli board
-// list".
-// The entry is expected to have the format:
-// <fqbn> <port> <id> <board name>
-// If it does not, an error is returned.
+/// Extracts a given query item from a given board entry of the output of `arduino-cli board
+/// list`.
+///
+/// # Errors
+/// The entry is expected to have the format:
+/// `<fqbn>\t<port>\t<id>\t<board name>`
+/// If it does not, an error is returned.
 fn query_from_board_entry(query: Query, board_entry: &str) -> Result<String, Error> {
-    // The required field count is 4, as the expected format of a board list enty above shows.
-    // The field count might be higher though, as a field may contain white space. This will
-    // not affect the current query items though, as they will not contain whitespace (?).
     const REQUIRED_FIELD_COUNT: u8 = 4;
     let mut field_count = 0;
 
     let query_column = match query { Query::Fqbn => 1, Query::Port => 2, };
     let mut query_item: Option<&str> = None;
 
-    // Iterates over the fields in the entry, on the one hand to extract the query item, and on
-    // the other hand to count the number of fields.
-    for field in board_entry.split_whitespace() {
+    // Extracts the query item and counts the number of fields.
+    for field in board_entry.split('\t') {
         field_count += 1;
         if field_count == query_column { query_item = Some(field); }
     }
 
-    // The query item container will definitely contain a value, if the field count has reached
-    // the required field count.
-    if field_count >= REQUIRED_FIELD_COUNT {
+    // The query item container will definitely contain a value, if the field count is valid.
+    if field_count == REQUIRED_FIELD_COUNT {
         Ok(String::from(query_item.unwrap()))
     } else {
         Err(Error::UnexpectedSyntax)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const DEVICE_LIST_HEADER: &'static str = "FQBN\tPort\tID\tBoard Name";
+    const SOME_QUERY_ITEM: &'static str = "Query::Item/1'\\\"_";
+    const SOME_QUERY: Query = Query::Fqbn;
+
+    #[test]
+    fn no_devices() {
+        let no_device_list = format!("{}\n", DEVICE_LIST_HEADER);
+
+        let result = query_from_board_list(SOME_QUERY, &no_device_list);
+        let err = result.unwrap_err();
+
+        assert_eq!(err, Error::NoDevice);
+    }
+
+    #[test]
+    fn multiple_devices() {
+        let multi_device_list = format!("{}\n1\t2\t3\t4\nA\tB\tC\tD\n", DEVICE_LIST_HEADER);
+
+        let result = query_from_board_list(SOME_QUERY, &multi_device_list);
+        let err = result.unwrap_err();
+
+        assert_eq!(err, Error::MultipleDevices);
+    }
+
+    #[test]
+    fn unexpected_syntax() {
+        const INVALID_ENTRY: &'static str = "1\t2\t3\t4\t5\n";
+
+        let result = query_from_board_entry(SOME_QUERY, INVALID_ENTRY);
+        let err = result.unwrap_err();
+
+        assert_eq!(err, Error::UnexpectedSyntax);
+    }
+
+    #[test]
+    fn valid_list() {
+        let valid_list = format!("{}\n\t\n1\t2\t3\t4\n\t\n", DEVICE_LIST_HEADER);
+
+        let result = query_from_board_list(SOME_QUERY, &valid_list);
+
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn valid_fqbn_query() {
+        let board_list = format!("{}\n{}\t2\t3\t4\n\t\n", DEVICE_LIST_HEADER, SOME_QUERY_ITEM);
+        let query = Query::Fqbn;
+
+        let result = query_from_board_list(query, &board_list);
+        let query_item = result.unwrap();
+
+        assert_eq!(query_item, SOME_QUERY_ITEM);
+    }
+
+    #[test]
+    fn valid_port_query() {
+        let board_list = format!("{}\n1\t{}\t3\t4\n\t\n", DEVICE_LIST_HEADER, SOME_QUERY_ITEM);
+        let query = Query::Port;
+
+        let result = query_from_board_list(query, &board_list);
+        let query_item = result.unwrap();
+
+        assert_eq!(query_item, SOME_QUERY_ITEM);
     }
 }

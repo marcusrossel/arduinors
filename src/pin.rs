@@ -2,9 +2,8 @@
 //! associated properties like state, mode and level.
 
 /// A digital pin on an Arduino.
-pub struct Pin {
-    value: i32
-}
+#[derive(Clone, Copy)]
+pub struct Pin(i32);
 
 impl Pin {
     /// Creates a pin from its number value.
@@ -14,13 +13,14 @@ impl Pin {
             panic!("Pin initializer received invalid value: {}", value);
         }
 
-        Pin { value }
+        Pin(value)
     }
 
-    pub fn value(&self) -> i32 { self.value }
+    pub fn value(&self) -> i32 { self.0 }
 }
 
 /// The mode of a digital pin on an Arduino.
+#[derive(Clone, Copy)]
 pub enum Mode { Input, Output }
 
 impl Mode {
@@ -31,6 +31,7 @@ impl Mode {
 }
 
 /// The state of a digital pin on an Arduino.
+#[derive(Clone, Copy)]
 pub enum State { Low, High }
 
 impl State {

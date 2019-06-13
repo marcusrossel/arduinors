@@ -1,3 +1,4 @@
+//! # Arduinors
 //! This library provides an interface for working with Arduino-related tasks.
 //! It provides a Firmata-based interface for manipulating Arduino boards, as well as an interface
 //! for working with the Arduino CLI.
