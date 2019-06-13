@@ -1,24 +1,26 @@
 use std::process;
 use std::path::Path;
+use std::fs;
 
+use super::DeviceInfo;
 use super::Error;
-use super::query::*;
 
-/// Compiles a sketch at a given path, for the currently connected Arduino.
+/// Compiles a sketch at a given path, for the device with the given info.
 /// The given path should point to the sketch **directory**, not **file**.
 ///
 /// # Errors
-/// This function calls `arduino::cli::query`, and will pass along any errors produced by it.
 /// * `CommandFailure`, if the `arduino-cli` command fails or an error occurs during compilation.
+///   This will definitely occur if the given device info in unknown.
 /// * `InvalidSketchPath`, if the sketch does not have the format required for Arduino sketches.
-pub fn compile(sketch: &Path) -> Result<(), Error> {
-    // Compilation requires the sketch path and FQBN as parameters.
-    let path = sketch_to_str(sketch)?;
-    let fqbn = query(Query::Fqbn)?;
+pub fn compile(sketch: &Path, device_info: &DeviceInfo) -> Result<(), Error> {
+    // Command failure would occur if this device info was used.
+    if device_info.has_unknown_core() { return Err(Error::CommandFailure); }
+
+    let path = sketch_to_string(sketch)?;
 
     // Asks the Arduino CLI to compile the given sketch.
     let compilation_result = process::Command::new("arduino-cli")
-        .args(&["compile", "--fqbn", &fqbn[..], path])
+        .args(&["compile", "--fqbn", device_info.fqbn(), &path])
         .stdout(process::Stdio::null())
         .stderr(process::Stdio::null())
         .status();
@@ -29,22 +31,23 @@ pub fn compile(sketch: &Path) -> Result<(), Error> {
     }
 }
 
-/// Uploads a **compiled** sketch onto the currently connected Arduino.
+/// Uploads a **compiled** sketch onto Arduino with the given device info.
 /// The given path should point to the sketch **directory**, not **file**.
 ///
 /// # Errors
-/// This function calls `arduino::cli::query`, and will pass along any errors produced by it.
 /// * `CommandFailure`, if the `arduino-cli` command fails or an error occurs during uploading.
+///   This will definitely occur if the given device info in unknown, or the Arduino is not
+///   connected.
 /// * `InvalidSketchPath`, if the sketch does not have the format required for Arduino sketches.
-pub fn upload(sketch: &Path) -> Result<(), Error> {
-    // Uploading requires the sketch path, Arduino's FQBN and port as parameters.
-    let path = sketch_to_str(sketch)?;
-    let fqbn = query(Query::Fqbn)?;
-    let port = query(Query::Port)?;
+pub fn upload(sketch: &Path, device_info: &DeviceInfo) -> Result<(), Error> {
+    // Command failure would occur if this device info was used.
+    if device_info.has_unknown_core() { return Err(Error::CommandFailure); }
+
+    let path = sketch_to_string(sketch)?;
 
     // Asks the Arduino CLI to upload the given compiled sketch.
     let compilation_result = process::Command::new("arduino-cli")
-        .args(&["upload", "--port", &port[..], "--fqbn", &fqbn[..], path])
+        .args(&["upload", "--port", device_info.port(), "--fqbn", device_info.fqbn(), &path])
         .stdout(process::Stdio::null())
         .stderr(process::Stdio::null())
         .status();
@@ -55,14 +58,35 @@ pub fn upload(sketch: &Path) -> Result<(), Error> {
     }
 }
 
-/// Converts a given sketch-path to its string representation, while validating the path in the
+/// Converts a given sketch-path to its canonical string representation, while validating it in the
 /// process.
-fn sketch_to_str(sketch: &Path) -> Result<&str, Error> {
-    // An Arduino sketch must be a directory with a valid UTF-8 name.
-    match sketch.to_str() {
-        Some(path) if sketch.is_dir() => Ok(path),
-        _ => Err(Error::InvalidSketchPath),
+fn sketch_to_string(sketch: &Path) -> Result<String, Error> {
+    // An Arduino sketch must be a directory with a valid UTF-8 name, that contains a .ino-file of
+    // the same name.
+    if let Ok(canonical_path) = sketch.canonicalize() {
+        if canonical_path.is_dir() {
+            if let Ok(sketch_files) = fs::read_dir(&canonical_path) {
+                if let Some(sketch_name) = canonical_path.file_name() {
+                    let sketch_files_paths: Vec<_> = sketch_files
+                        .filter_map(|entry| entry.ok())
+                        .map(|entry| entry.file_name())
+                        .collect();
+
+                    if let Some(sketch_name) = sketch_name.to_str() {
+                        let sketch_file = format!("{}.ino", sketch_name);
+
+                        if sketch_files_paths.contains(&std::ffi::OsString::from(sketch_file)) {
+                            if let Some(sketch_path) = canonical_path.to_str() {
+                                return Ok(String::from(sketch_path));
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
+
+    Err(Error::InvalidSketchPath)
 }
 
 #[cfg(test)]
@@ -70,10 +94,11 @@ mod tests {
     use super::*;
 
     #[test]
-    fn invalid_sketch_path() {
+    fn invalid_sketch_path_to_str() {
+        // A path that should be invalid on all systems.
         let invalid_path = Path::new(":X/\\:y/z");
 
-        let result = sketch_to_str(invalid_path);
+        let result = sketch_to_string(invalid_path);
         let err = result.unwrap_err();
 
         assert_eq!(err, Error::InvalidSketchPath);
