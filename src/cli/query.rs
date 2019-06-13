@@ -6,7 +6,12 @@ use super::Error;
 
 /// Items that the Arduino CLI can be queried for.
 #[derive(Clone, Copy)]
-pub enum Query { Fqbn, Port }
+pub enum Query {
+    Fqbn = 0,
+    Port = 1,
+    Id = 2,
+    BoardName = 3,
+}
 
 /// Extracts the item associated with a given query by calling the Arduino CLI - or more
 /// specifically `arduino-cli board list`.
@@ -15,6 +20,7 @@ pub enum Query { Fqbn, Port }
 /// * `CommandFailure`, if the `arduino-cli` command fails or produces non-UTF-8 output.
 /// * `NoDevice`, if no Arduino is connected to the computer during the call.
 /// * `MultipleDevices`, if more than one Arduino is connected to the computer during the call.
+/// * `MissingCore`, if a single Arduino device was found, but its core is not installed.
 /// * `UnexpectedSyntax`, if the call to the Arduino CLI produced an output in a different format
 ///   than expected.
 pub fn query(query: Query) -> Result<String, Error> {
@@ -78,25 +84,27 @@ fn query_from_board_list(query: Query, board_list: &str) -> Result<String, Error
 /// # Errors
 /// The entry is expected to have the format:
 /// `<fqbn>\t<port>\t<id>\t<board name>`
-/// If it does not, an error is returned.
+///
+/// * `UnexpectedSyntax`, if the board entry does not have the expected format.
+/// * `MissingCore`, if the board entry's FQBN-field was empty (implying that the board's core
+///    is not installed).
 fn query_from_board_entry(query: Query, board_entry: &str) -> Result<String, Error> {
-    const REQUIRED_FIELD_COUNT: u8 = 4;
-    let mut field_count = 0;
+    const REQUIRED_FIELD_COUNT: usize = 4;
+    let query_column = query as usize;
 
-    let query_column = match query { Query::Fqbn => 1, Query::Port => 2, };
-    let mut query_item: Option<&str> = None;
+    // Fields in a board entry are seperated by tabs.
+    let fields: Vec<_> = board_entry.split('\t').collect();
 
-    // Extracts the query item and counts the number of fields.
-    for field in board_entry.split('\t') {
-        field_count += 1;
-        if field_count == query_column { query_item = Some(field); }
-    }
+    if fields.len() != REQUIRED_FIELD_COUNT { return Err(Error::UnexpectedSyntax); }
 
-    // The query item container will definitely contain a value, if the field count is valid.
-    if field_count == REQUIRED_FIELD_COUNT {
-        Ok(String::from(query_item.unwrap()))
+    // The fields container will definitely contain a value for any query, as the field count is
+    // valid.
+
+    // If the FQBN field is only whitespace, the Arduino's core is not installed.
+    if fields[Query::Fqbn as usize].trim().is_empty() {
+        Err(Error::MissingCore)
     } else {
-        Err(Error::UnexpectedSyntax)
+        Ok(String::from(fields[query_column]))
     }
 }
 

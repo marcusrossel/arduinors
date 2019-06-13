@@ -12,6 +12,7 @@ pub enum Error {
     CommandFailure,
     NoDevice,
     MultipleDevices,
+    MissingCore,
     UnexpectedSyntax,
     InvalidSketchPath,
  }

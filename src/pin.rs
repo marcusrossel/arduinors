@@ -21,25 +21,11 @@ impl Pin {
 
 /// The mode of a digital pin on an Arduino.
 #[derive(Clone, Copy)]
-pub enum Mode { Input, Output }
-
-impl Mode {
-    /// Returns a numeric equivalent of a pin mode.
-    pub fn value(&self) -> u8 {
-        match self { Mode::Input => 0, Mode::Output => 1 }
-    }
-}
+pub enum Mode { Input = 0, Output = 1 }
 
 /// The state of a digital pin on an Arduino.
 #[derive(Clone, Copy)]
-pub enum State { Low, High }
-
-impl State {
-    /// Returns a numeric equivalent of a pin state.
-    pub fn value(&self) -> i32 {
-        match self { State::Low => 0, State::High => 1 }
-    }
-}
+pub enum State { Low = 0, High = 1 }
 
 /// A PWM level of a digital pin on an Arduino.
 pub type Level = u8;
@@ -58,17 +44,5 @@ mod tests {
     #[should_panic]
     fn invalid_pin() {
         let _pin_1 = Pin::new(1);
-    }
-
-    #[test]
-    fn mode_value() {
-        assert_eq!(Mode::Input.value(), 0);
-        assert_eq!(Mode::Output.value(), 1);
-    }
-
-    #[test]
-    fn state_value() {
-        assert_eq!(State::Low.value(), 0);
-        assert_eq!(State::High.value(), 1);
     }
 }

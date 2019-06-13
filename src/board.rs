@@ -22,7 +22,7 @@ impl Arduino {
 
     /// Writes the given pin state to the given pin of the Arduino.
     pub fn digital_write(&mut self, pin: Pin, state: pin::State) {
-        self.0.digital_write(pin.value(), state.value());
+        self.0.digital_write(pin.value(), state as i32);
     }
 
     /// Writes the given pin level to the given pin of the Arduino.
@@ -32,6 +32,6 @@ impl Arduino {
 
     /// Set the given pin of the Arduino to the given mode.
     pub fn set_pin_mode(&mut self, pin: Pin, mode: pin::Mode) {
-        self.0.set_pin_mode(pin.value(), mode.value());
+        self.0.set_pin_mode(pin.value(), mode as u8);
     }
 }
