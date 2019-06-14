@@ -1,4 +1,4 @@
-use crate::cli::DeviceInfo;
+use crate::Board;
 
 use crate::pin;
 use crate::pin::Pin;
@@ -8,9 +8,9 @@ pub struct Arduino(firmata::Board);
 
 impl Arduino {
 
-    /// Creates an Arduino with the port contained in given device info.
-    pub fn from(device_info: &DeviceInfo) -> Arduino {
-        Arduino(firmata::Board::new(device_info.port()))
+    /// Creates an Arduino bound to a given board.
+    pub fn from(board: &Board) -> Arduino {
+        Arduino(firmata::Board::new(board.port()))
     }
 
     /// Writes the given pin state to the given pin of the Arduino.

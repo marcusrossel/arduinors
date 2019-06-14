@@ -3,8 +3,8 @@
 mod run;
 pub use run::*;
 
-mod info;
-pub use info::*;
+mod board;
+pub use board::*;
 
 /// The kinds of errors that can occur as a result of interacting with the Arduino CLI.
 #[derive(Clone, Copy, PartialEq, Debug)]

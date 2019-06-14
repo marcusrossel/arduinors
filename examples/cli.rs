@@ -4,17 +4,17 @@ use std::path::Path;
 use arduinors::cli;
 
 fn main() {
-    let device_info = &cli::board_list_serial().unwrap()[0];
+    let board = &cli::board_list_serial().unwrap()[0];
 
-    println!("FQBN: {}", device_info.fqbn());
-    println!("Port: {}", device_info.port());
+    println!("FQBN: {}", board.fqbn());
+    println!("Port: {}", board.port());
 
-    if device_info.has_unknown_core() {
+    if board.has_unknown_core() {
         println!("The device's core is not installed.");
     }
 
     let sketch = Path::new("sketch-path");
 
-    cli::compile(sketch, device_info).unwrap();
-    cli::upload(sketch, device_info).unwrap();
+    cli::compile(sketch, board).unwrap();
+    cli::upload(sketch, board).unwrap();
 }

@@ -2,25 +2,25 @@ use std::process;
 use std::path::Path;
 use std::fs;
 
-use super::DeviceInfo;
+use crate::Board;
 use super::Error;
 
-/// Compiles a sketch at a given path, for the device with the given info.
+/// Compiles a sketch at a given path, for a given board.
 /// The given path should point to the sketch **directory**, not **file**.
 ///
 /// # Errors
 /// * `CommandFailure`, if the `arduino-cli` command fails or an error occurs during compilation.
-///   This will definitely occur if the given device info in unknown.
+///   This will definitely occur if the given board has an unknown core.
 /// * `InvalidSketchPath`, if the sketch does not have the format required for Arduino sketches.
-pub fn compile(sketch: &Path, device_info: &DeviceInfo) -> Result<(), Error> {
+pub fn compile(sketch: &Path, board: &Board) -> Result<(), Error> {
     // Command failure would occur if this device info was used.
-    if device_info.has_unknown_core() { return Err(Error::CommandFailure); }
+    if board.has_unknown_core() { return Err(Error::CommandFailure); }
 
     let path = sketch_to_string(sketch)?;
 
     // Asks the Arduino CLI to compile the given sketch.
     let compilation_result = process::Command::new("arduino-cli")
-        .args(&["compile", "--fqbn", device_info.fqbn(), &path])
+        .args(&["compile", "--fqbn", board.fqbn(), &path])
         .stdout(process::Stdio::null())
         .stderr(process::Stdio::null())
         .status();
@@ -31,23 +31,23 @@ pub fn compile(sketch: &Path, device_info: &DeviceInfo) -> Result<(), Error> {
     }
 }
 
-/// Uploads a **compiled** sketch onto Arduino with the given device info.
+/// Uploads a **compiled** sketch onto Arduino with the given board.
 /// The given path should point to the sketch **directory**, not **file**.
 ///
 /// # Errors
 /// * `CommandFailure`, if the `arduino-cli` command fails or an error occurs during uploading.
-///   This will definitely occur if the given device info in unknown, or the Arduino is not
+///   This will definitely occur if the given board has an unknown core, or its Arduino is not
 ///   connected.
 /// * `InvalidSketchPath`, if the sketch does not have the format required for Arduino sketches.
-pub fn upload(sketch: &Path, device_info: &DeviceInfo) -> Result<(), Error> {
+pub fn upload(sketch: &Path, board: &Board) -> Result<(), Error> {
     // Command failure would occur if this device info was used.
-    if device_info.has_unknown_core() { return Err(Error::CommandFailure); }
+    if board.has_unknown_core() { return Err(Error::CommandFailure); }
 
     let path = sketch_to_string(sketch)?;
 
     // Asks the Arduino CLI to upload the given compiled sketch.
     let compilation_result = process::Command::new("arduino-cli")
-        .args(&["upload", "--port", device_info.port(), "--fqbn", device_info.fqbn(), &path])
+        .args(&["upload", "--port", board.port(), "--fqbn", board.fqbn(), &path])
         .stdout(process::Stdio::null())
         .stderr(process::Stdio::null())
         .status();
