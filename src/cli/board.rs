@@ -73,7 +73,7 @@ pub fn board_list_serial() -> Result<Vec<Board>, Error> {
         // use it.
         str::from_utf8(&stdout)
             .map_err(|_| Error::CommandFailure)
-            .and_then(boards_from_list)
+            .and_then(boards_from_json)
     } else {
         Err(Error::CommandFailure)
     }
@@ -84,10 +84,10 @@ pub fn board_list_serial() -> Result<Vec<Board>, Error> {
 ///
 /// # Errors
 /// * `UnknownFormat`, if deserialization is unsuccessful.
-fn boards_from_list(board_list: &str) -> Result<Vec<Board>, Error> {
+fn boards_from_json(board_json: &str) -> Result<Vec<Board>, Error> {
     // Deserialization is handeled automatically by `Board`'s derived conformance to serde's
     // `Deserialize`.
-    json::from_str(board_list)
+    json::from_str(board_json)
         .map(|board_list: BoardList| board_list.serialBoards)
         .map_err(|_| Error::UnknownFormat)
 }
@@ -116,7 +116,7 @@ mod tests {
 
     /// A convenience function for creating the JSON-string, as would be printed by `arduino-cli
     /// board list --format json`, for a given list of boards.
-    fn list_for_boards(boards: &Vec<Board>) -> String {
+    fn json_for_boards(boards: &Vec<Board>) -> String {
         // Network boards are currently not taken into account.
         let board_list = BoardList {
             serialBoards: boards.clone(),
@@ -127,46 +127,46 @@ mod tests {
     }
 
     #[test]
-    fn no_devices() {
-        let no_board_json = &list_for_boards(&vec![]);
+    fn no_boards() {
+        let no_board_json = &json_for_boards(&vec![]);
 
-        let result = boards_from_list(no_board_json).unwrap();
+        let result = boards_from_json(no_board_json).unwrap();
 
         assert!(result.is_empty());
     }
 
     #[test]
-    fn one_device() {
-        let device_infos = vec![some_board()];
-        let one_board_json = &list_for_boards(&device_infos);
+    fn one_board() {
+        let boards = vec![some_board()];
+        let one_board_json = &json_for_boards(&boards);
 
-        let result = boards_from_list(one_board_json).unwrap();
+        let result = boards_from_json(one_board_json).unwrap();
 
-        assert_eq!(result, device_infos);
+        assert_eq!(result, boards);
     }
 
     #[test]
-    fn multiple_devices() {
-        let device_infos = vec![some_board(), coreless_board()];
-        let multi_board_json = &list_for_boards(&device_infos);
+    fn multiple_boards() {
+        let boards = vec![some_board(), coreless_board()];
+        let multi_board_json = &json_for_boards(&boards);
 
-        let result = boards_from_list(multi_board_json).unwrap();
+        let result = boards_from_json(multi_board_json).unwrap();
 
-        assert_eq!(result, device_infos);
+        assert_eq!(result, boards);
     }
 
     #[test]
-    fn empty_board_list() {
-        let err = boards_from_list("").unwrap_err();
+    fn empty_json() {
+        let err = boards_from_json("").unwrap_err();
 
         assert_eq!(err, Error::UnknownFormat);
     }
 
     #[test]
-    fn malformed_board_list() {
+    fn malformed_json() {
         let malformed_json = r#"{"serialBoards": [{"fqbn": "0123"}], "networkBoards": []}"#;
 
-        let err = boards_from_list(malformed_json).unwrap_err();
+        let err = boards_from_json(malformed_json).unwrap_err();
 
         assert_eq!(err, Error::UnknownFormat);
     }

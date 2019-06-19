@@ -6,6 +6,8 @@ pub use run::*;
 mod board;
 pub use board::*;
 
+mod core;
+
 /// The kinds of errors that can occur as a result of interacting with the Arduino CLI.
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub enum Error {
