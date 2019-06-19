@@ -6,16 +6,17 @@ use std::time::Duration;
 use arduinors as arduino;
 use arduino::Arduino;
 
-fn main() {
+fn main() -> Result<(), arduino::Error> {
     let board = &arduino::cli::board_list_serial().unwrap()[0];
 
     let mut arduino = Arduino::from(board);
-    let pin_10 = arduino::Pin::new(10);
 
-    arduino.set_pin_mode(pin_10, arduino::pin::Mode::Output);
-    arduino.digital_write(pin_10, arduino::pin::State::High);
+    arduino.set_pin_mode(10, arduino::PinMode::DigitalOutput)?;
+    arduino.write(10, 1)?;
 
     sleep(Duration::from_secs(1));
 
-    arduino.digital_write(pin_10, arduino::pin::State::Low);
+    arduino.write(10, 0)?;
+
+    Ok(())
 }

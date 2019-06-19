@@ -10,10 +10,7 @@
 //! Not meeting these expectations will result in errors for almost all function/method calls.
 
 mod arduino;
-pub use arduino::Arduino;
+pub use arduino::*;
 
 pub mod cli;
 pub use cli::Board;
-
-pub mod pin;
-pub use pin::Pin;

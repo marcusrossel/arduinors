@@ -3,7 +3,7 @@
 use std::path::Path;
 use arduinors::cli;
 
-fn main() {
+fn main() -> Result<(), cli::Error> {
     let board = &cli::board_list_serial().unwrap()[0];
 
     println!("FQBN: {}", board.fqbn());
@@ -15,6 +15,8 @@ fn main() {
 
     let sketch = Path::new("sketch-path");
 
-    cli::compile(sketch, board).unwrap();
-    cli::upload(sketch, board).unwrap();
+    cli::compile(sketch, board)?;
+    cli::upload(sketch, board)?;
+
+    Ok(())
 }
